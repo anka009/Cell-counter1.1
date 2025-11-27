@@ -1,0 +1,9 @@
+streamlit==1.38.0
+streamlit-image-coordinates==0.1.7
+pillow
+tifffile
+numpy
+pandas
+opencv-python-headless
+streamlit-drawable-canvas
+scikit-learn
