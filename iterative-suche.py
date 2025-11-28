@@ -214,11 +214,6 @@ H_orig, W_orig = image_orig.shape[:2]
 scale = DISPLAY_WIDTH / float(W_orig)
 H_disp = int(round(H_orig * scale))
 image_disp = cv2.resize(image_orig, (DISPLAY_WIDTH, H_disp), interpolation=cv2.INTER_AREA)
-
-# Convert some user parameters from display units to original units
-# min_area_display is interpretated by user as display pixel area — convert back to original area
-area_scale = (1.0 / (scale * scale)) if scale > 0 else 1.0
-min_area_orig = max(1, int(round(min_area_display * area_scale)))
 dedup_dist_orig = max(1.0, float(dedup_dist_display / scale))
 
 # -------------------- Draw existing points on display canvas --------------------
