@@ -262,7 +262,6 @@ if coords:
     y_orig = int(round(y_disp / scale))
 
     if mode == "Punkt löschen":
-        # remove points near click (operate in original coords)
         removed = []
         new_all = []
         for p in st.session_state.all_points:
@@ -271,10 +270,8 @@ if coords:
             else:
                 new_all.append(p)
         if removed:
-            # save history for undo
             st.session_state.history.append(("delete_points", {"removed": removed}))
             st.session_state.all_points = new_all
-            # remove from groups as well
             for g in st.session_state.groups:
                 g["points"] = [p for p in g["points"] if not is_near(p, (x_orig, y_orig), dedup_dist_orig)]
             st.success(f"{len(removed)} Punkt(e) gelöscht.")
@@ -347,8 +344,9 @@ if coords:
                 min_dist=dedup_dist_orig
             )
 
-            # 👉 Klickpunkt selbst immer hinzufügen
-            new_centers.append((x_orig, y_orig))
+            # 👉 Klickpunkt nur hinzufügen, wenn er nicht schon existiert
+            if not any(is_near(p, (x_orig, y_orig), dedup_dist_orig) for p in st.session_state.all_points):
+                new_centers.append((x_orig, y_orig))
 
             if new_centers:
                 color = PRESET_COLORS[len(st.session_state.groups) % len(PRESET_COLORS)]
@@ -360,7 +358,7 @@ if coords:
                 st.session_state.history.append(("add_group", {"group_idx": len(st.session_state.groups)}))
                 st.session_state.groups.append(group)
                 st.session_state.all_points.extend(new_centers)
-                st.success(f"Gruppe hinzugefügt — neue Kerne: {len(new_centers)} (inkl. Klickpunkt)")
+                st.success(f"Gruppe hinzugefügt — neue Kerne: {len(new_centers)} (inkl. Klickpunkt, falls neu)")
             else:
                 st.info("Keine neuen Kerne (alle bereits gezählt oder keine Detektion).")
 
