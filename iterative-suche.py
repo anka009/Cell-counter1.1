@@ -347,6 +347,66 @@ if coords:
                                                                 debug=False)
             # 6) Deduplicate against global list (all_points stored in original coords)
             new_centers = dedup_new_points(centers_orig, st.session_state.all_points, min_dist=dedup_dist_orig)
+    else:
+    # Mode: Kalibriere und zähle Gruppe
+    # 1) extract patch from ORIGINAL image and compute OD vector
+    patch = extract_patch(image_orig, x_orig, y_orig, calib_radius)
+    vec = median_od_vector_from_patch(patch)
+    if vec is None:
+        st.warning("Patch unbrauchbar (zu homogen oder außerhalb). Bitte anders klicken.")
+    else:
+        # 2) Build stain matrix using clicked vector as 'target' and hematoxylin initial guess
+        M = make_stain_matrix(vec, hema_vec0)
+        M_hash = tuple(np.round(M.flatten(), 6).tolist())
+
+        # 3) Deconvolve entire ORIGINAL image, cached per M
+        recompute = False
+        if st.session_state.C_cache is None or st.session_state.last_M_hash != M_hash:
+            recompute = True
+        if recompute:
+            C_full = deconvolve(image_orig, M)
+            if C_full is None:
+                st.error("Deconvolution fehlgeschlagen (numerisch).")
+                st.stop()
+            st.session_state.C_cache = C_full
+            st.session_state.last_M_hash = M_hash
+        else:
+            C_full = st.session_state.C_cache
+
+        # 4) Use component 0 (the 'target' vector)
+        channel_full = C_full[:, :, 0]
+
+        # 5) Detect centers automatically
+        centers_orig, mask = detect_centers_from_channel_v2(
+            channel_full,
+            threshold=detection_threshold,
+            min_area=min_area_orig,
+            debug=False
+        )
+
+        # 6) Deduplicate against global list
+        new_centers = dedup_new_points(
+            centers_orig,
+            st.session_state.all_points,
+            min_dist=dedup_dist_orig
+        )
+
+        # 👉 Klickpunkt selbst immer hinzufügen
+        new_centers.append((x_orig, y_orig))
+
+        if new_centers:
+            color = PRESET_COLORS[len(st.session_state.groups) % len(PRESET_COLORS)]
+            group = {
+                "vec": vec.tolist(),
+                "points": new_centers,
+                "color": color
+            }
+            st.session_state.history.append(("add_group", {"group_idx": len(st.session_state.groups)}))
+            st.session_state.groups.append(group)
+            st.session_state.all_points.extend(new_centers)
+            st.success(f"Gruppe hinzugefügt — neue Kerne: {len(new_centers)} (inkl. Klickpunkt)")
+        else:
+            st.info("Keine neuen Kerne (alle bereits gezählt oder keine Detektion).")
 
             if new_centers:
                 # create a color and append group (store original coords)
