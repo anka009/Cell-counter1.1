@@ -86,68 +86,59 @@ def deconvolve(img_rgb, M):
         return None
     return C.reshape(img_rgb.shape)
 
-def detect_centers_from_channel_v2(channel, threshold=0.2, min_area=8, debug=False):
+def detect_centers_from_channel_v2(channel, threshold=0.2, min_area=30, debug=False):
     """
     Robust detection pipeline on a single channel (float image, original size).
-    - percentile normalization
-    - mild Gaussian blur
-    - adaptive threshold (local)
-    - small morphological cleanup (2x2)
-    - contour detection and centroid extraction
+    - Normalisierung
+    - Globales Thresholding
+    - Morphologische Bereinigung (Open/Close)
+    - Konturerkennung mit Flächenfilterung
     Returns: centers_list (in original coords), mask_uint8
     """
     arr = np.array(channel, dtype=np.float32)
-    # make non-negative
     arr = np.maximum(arr, 0.0)
 
-    # robust normalization using percentiles
+    # Normierung auf 0..1
     vmin, vmax = np.percentile(arr, [2, 99.5])
     if vmax - vmin < 1e-5:
-        # flat channel -> no detections
         return [], np.zeros_like(arr, dtype=np.uint8)
 
     norm = (arr - vmin) / (vmax - vmin)
     norm = np.clip(norm, 0.0, 1.0)
-    # convert to 8-bit for cv2 functions
     u8 = (norm * 255.0).astype(np.uint8)
 
-    # mild smoothing (shape-preserving for small objects)
-    blur = cv2.GaussianBlur(u8, (5, 5), 0)
-
-    # adaptive threshold: blockSize should be odd and tuned to object size;
-    # 35 is a safe default for many microscopy images, but small images may need smaller blocks.
-    blockSize = 35
-    if min(arr.shape) < 100:
-        blockSize = 15
-    if blockSize % 2 == 0:
-        blockSize += 1
-    # C is a small subtraction constant; negative to be a bit more permissive
-    C = -2
-
+    # Thresholding (Fallback falls adaptive nicht klappt)
     try:
-        mask = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                     cv2.THRESH_BINARY, blockSize, C)
+        mask = cv2.adaptiveThreshold(u8, 255,
+                                     cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                     cv2.THRESH_BINARY,
+                                     35, -2)
     except Exception:
-        # fallback to global threshold
-        _, mask = cv2.threshold(blur, int(threshold * 255), 255, cv2.THRESH_BINARY)
+        _, mask = cv2.threshold(u8, int(threshold * 255), 255, cv2.THRESH_BINARY)
 
-    # tiny opening to remove specks, tiny closing to consolidate small holes
-    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
-    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
+    # Morphologische Bereinigung
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
 
-    # find contours
+    # Konturen finden und nach Fläche filtern
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     centers = []
-    for c in contours:
-        area = cv2.contourArea(c)
-        if area >= max(1, min_area):
-            M = cv2.moments(c)
+    for cnt in contours:
+        area = cv2.contourArea(cnt)
+        if area >= min_area:  # harte Filterung
+            M = cv2.moments(cnt)
             if M["m00"] != 0:
-                cx = float(M["m10"] / M["m00"])
-                cy = float(M["m01"] / M["m00"])
-                centers.append((int(round(cx)), int(round(cy))))
+                cx = int(M["m10"] / M["m00"])
+                cy = int(M["m01"] / M["m00"])
+                centers.append((cx, cy))
+
+    if debug:
+        dbg = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+        for (cx, cy) in centers:
+            cv2.circle(dbg, (cx, cy), 5, (0, 0, 255), -1)
+        return centers, dbg
+
     return centers, mask
 
 # -------------------- Session state initialisierung --------------------
