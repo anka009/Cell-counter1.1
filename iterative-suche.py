@@ -116,10 +116,13 @@ def detect_centers_from_channel_v2(channel, threshold=0.2, min_area=30, debug=Fa
     except Exception:
         _, mask = cv2.threshold(u8, int(threshold * 255), 255, cv2.THRESH_BINARY)
 
-    # Morphologische Bereinigung
-    kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    # Morphologische Bereinigung mit Sidebar-Werten
+    kernel_open = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size_open, kernel_size_open))
+    kernel_close = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size_close, kernel_size_close))
+
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel_open)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_close)
+
 
     # Konturen finden und nach Fläche filtern
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -173,6 +176,16 @@ with col2:
     detection_threshold = st.sidebar.slider("Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)", 0.01, 0.9, 0.2, 0.01)
     min_area_display = st.sidebar.number_input("Min. Konturfläche (px) — angezeigt (Display-Äquivalent)", min_value=1, max_value=2000, value=80)
     dedup_dist_display = st.sidebar.slider("Min. Distanz für Doppelzählung (px, Display)", 1, 40, 10)
+    # Sidebar Parameter
+    detection_threshold = st.sidebar.slider("Detection Threshold", 0.0, 1.0, 0.2, 0.01)
+    min_area_orig = st.sidebar.number_input("Minimale Konturfläche", min_value=1, max_value=1000, value=30, step=1)
+    dedup_dist_orig = st.sidebar.slider("Dedup-Distanz (px)", 1, 50, 10, 1)
+
+    # 👉 Neue Morphologie-Parameter
+    kernel_size_open = st.sidebar.slider("Kernelgröße für Öffnen", 1, 10, 3, 1)
+    kernel_size_close = st.sidebar.slider("Kernelgröße für Schließen", 1, 10, 3, 1)
+
+    
     circle_radius = st.sidebar.slider("Marker-Radius (px, Display)", 1, 12, 5)
     st.sidebar.markdown("### Startvektoren (optional, RGB)")
     hema_default = st.sidebar.text_input("Hematoxylin vector (comma)", value="0.65,0.70,0.29")
