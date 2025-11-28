@@ -172,14 +172,19 @@ if uploaded_file.name != st.session_state.last_file:
 col1, col2 = st.columns([2, 1])
 with col2:
     st.sidebar.markdown("### Parameter")
-    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, original image)", 1, 30, 5)
-    detection_threshold = st.sidebar.slider("Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)", 0.01, 0.9, 0.2, 0.01)
-    min_area_display = st.sidebar.number_input("Min. Konturfläche (px) — angezeigt (Display)", min_value=1, max_value=2000, value=80)
-    dedup_dist_display = st.sidebar.slider("Min. Distanz für Doppelzählung (px) - Display", 1, 40, 10)
-    # Sidebar Parameter
-    detection_threshold = st.sidebar.slider("Detection Threshold", 0.0, 1.0, 0.2, 0.01)
-    min_area_orig = st.sidebar.number_input("Min. Konturfläche (px) - Originalbild", min_value=1, max_value=1000, value=30, step=1)
-    dedup_dist_orig = st.sidebar.slider("Dedup-Distanz (px)", 1, 50, 10, 1)
+    calib_radius = st.sidebar.slider("Kalibrier-Radius (px, Originalbild)", 1, 30, 5)
+    detection_threshold = st.sidebar.slider(
+        "Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)",
+        0.01, 0.9, 0.2, 0.01
+    )
+    min_area_orig = st.sidebar.number_input(
+        "Minimale Konturfläche (px, Originalbild)",
+        min_value=1, max_value=2000, value=30, step=1
+    )
+    dedup_dist_orig = st.sidebar.number_input(
+        "Dedup-Distanz (px, Originalbild)",
+        min_value=1, max_value=200, value=10, step=1
+    )
 
     # 👉 Neue Morphologie-Parameter
     kernel_size_open = st.sidebar.slider("Kernelgröße für Öffnen", 1, 15, 1, 1)
