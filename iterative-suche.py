@@ -179,11 +179,11 @@ with col2:
     )
     min_area_orig = st.sidebar.number_input(
         "Minimale Konturfläche (px, Originalbild)",
-        min_value=1, max_value=2000, value=30, step=1
+        min_value=1, max_value=5000, value=1000, step=1
     )
     dedup_dist_orig = st.sidebar.number_input(
         "Dedup-Distanz (px, Originalbild)",
-        min_value=1, max_value=200, value=10, step=1
+        min_value=1, max_value=2000, value=100, step=1
     )
 
     # 👉 Neue Morphologie-Parameter
