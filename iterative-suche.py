@@ -175,7 +175,7 @@ with col2:
     calib_radius = st.sidebar.slider("Kalibrier-Radius (px, original image)", 1, 30, 5)
     detection_threshold = st.sidebar.slider("Threshold (0-1) für Detektion (nur initial, adaptive wird verwendet)", 0.01, 0.9, 0.2, 0.01)
     min_area_display = st.sidebar.number_input("Min. Konturfläche (px) — angezeigt (Display)", min_value=1, max_value=2000, value=80)
-    dedup_dist_display = st.sidebar.slider("Min. Distanz für Doppelzählung (px) - Display)", 1, 40, 10)
+    dedup_dist_display = st.sidebar.slider("Min. Distanz für Doppelzählung (px) - Display", 1, 40, 10)
     # Sidebar Parameter
     detection_threshold = st.sidebar.slider("Detection Threshold", 0.0, 1.0, 0.2, 0.01)
     min_area_orig = st.sidebar.number_input("Min. Konturfläche (px) - Originalbild", min_value=1, max_value=1000, value=30, step=1)
