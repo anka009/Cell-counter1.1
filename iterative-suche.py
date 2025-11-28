@@ -214,7 +214,6 @@ H_orig, W_orig = image_orig.shape[:2]
 scale = DISPLAY_WIDTH / float(W_orig)
 H_disp = int(round(H_orig * scale))
 image_disp = cv2.resize(image_orig, (DISPLAY_WIDTH, H_disp), interpolation=cv2.INTER_AREA)
-dedup_dist_orig = max(1.0, float(dedup_dist_display / scale))
 
 # -------------------- Draw existing points on display canvas --------------------
 display_canvas = image_disp.copy()
